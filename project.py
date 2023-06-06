@@ -30,6 +30,7 @@ def ajouter_appel(identifiant, heure_appel, numero_origine, statut, duree, opera
         'operateur': operateur,
         'texte_descriptif': texte_descriptif
     }
+    r.lpush('to_take_call_id', identifiant)
     r.hset('appel:' + str(identifiant),  mapping=appel)
 
 
@@ -38,6 +39,7 @@ def affecter_appel(identifiant_appel, identifiant_operateur):
     appel['statut'] = status[1]
     appel['operateur'] = identifiant_operateur
     r.hset('appel:' + str(identifiant_appel),  mapping=appel)
+    r.lrem('to_take_call_id',0, identifiant_appel)
 
 def finir_appel(identifiant_appel,temps_appel):
     appel = r.hgetall('appel:' + str(identifiant_appel))
@@ -45,7 +47,12 @@ def finir_appel(identifiant_appel,temps_appel):
     appel['duree'] = temps_appel
     r.hset('appel:' + str(identifiant_appel), mapping=appel)
 
-
+def chercher_appel_a_prendre():
+    identifiant_appel = r.lpop('to_take_call_id')
+    appel = r.hgetall('appel:' + str(identifiant_appel))
+    appel['statut'] = status[1]
+    r.hset('appel:' + str(identifiant_appel), mapping=appel)
+    return appel
 #Ajout des opérateurs
 ajouter_operateurs()
 
